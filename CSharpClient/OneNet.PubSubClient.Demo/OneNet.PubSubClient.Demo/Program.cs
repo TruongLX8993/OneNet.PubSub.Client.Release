@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using OneNet.PubSub.Client;
@@ -9,11 +8,15 @@ namespace OneNet.PubSubClient.Demo
 {
     internal class Program
     {
-        private const string Url = "http://localhost:5000";
+        // Thay đổi đường dẫn tùy theo từng môi trường.
+        private const string Url = "http://localhost:81";
         private const string UseName = "test-1";
 
         public static async Task Main(string[] args)
         {
+            // Khai báo một handler nhận sự kiện từ topic.
+            var topicHandler = new TopicHandler(OnNewMessage, OnAbortTopic);
+            
             // Khai báo một connection.
             var pubSubConnection = new PubSubConnection(Url, UseName);
 
@@ -34,8 +37,8 @@ namespace OneNet.PubSubClient.Demo
             var topics = await pubSubConnection.SearchTopic("topic-test");
             Console.WriteLine(JsonConvert.SerializeObject(topics));
 
-            // Lắng nghe một topic mới
-            await pubSubConnection.SubscribeTopic("topic-test", OnNewMessage);
+            // Lắng nghe một topic
+            await pubSubConnection.SubscribeTopic("topic-test", topicHandler);
 
             // Gửi tin nhắn tới topic
             while (true)
@@ -76,5 +79,11 @@ namespace OneNet.PubSubClient.Demo
             Console.WriteLine(ex.Message);
             return Task.CompletedTask;
         }
+        
+        private static void OnAbortTopic(Topic topic)
+        {
+            Console.WriteLine($"Abort topic:{JsonConvert.SerializeObject(topic)}");
+        }
+
     }
 }

@@ -1,11 +1,30 @@
 const hubname = 'pub-sub';
 
 
+class TopicHandler {
+
+    constructor(messageHandler, abortHandler) {
+        this.messageHandler = messageHandler;
+        this.abortHandler = abortHandler;
+    }
+
+    onAbortTopic(topic) {
+        if (this.abortHandler != null)
+            this.abortHandler(topic);
+    }
+
+    onNewMessageTopic(topicName, data) {
+        if (this.messageHandler != null)
+            this.messageHandler(topicName, data);
+    }
+
+}
+
 class PubSubConnection {
 
     constructor(baseUrl, username) {
 
-        this.receivedMsgHandlers = [];
+        this.topicHandlers = [];
         this.newTopicHandler = null;
         this.disConnectedHandler = null;
 
@@ -28,9 +47,20 @@ class PubSubConnection {
     async connect() {
         await this.connection.start();
 
-        this.connection.on("onNewMessage", (topic, message) => {
-            this.receivedMsgHandlers[topic](topic, message);
+        this.connection.on("onNewMessage", (topicName, message) => {
+            var topicHandler = this.topicHandlers[topicName];
+            if (topicHandler == null)
+                return;
+            topicHandler.onNewMessageTopic(topicName, message);
         });
+
+        this.connection.on("onAbortTopic", (topic) => {
+            var topicHandler = this.topicHandlers[topic.name];
+            if (topicHandler == null)
+                return;
+            topicHandler.onAbortTopic(topic);
+        });
+
 
         this.connection.on("onNewTopic", (topic) => {
             if (this.newTopicHandler != null) {
@@ -47,9 +77,9 @@ class PubSubConnection {
         await this.connection.invoke("create-topic", topicName, null);
     }
 
-    async subscribe(topic, receivedMsgHandler) {
+    async subscribe(topic, topicHandler) {
         await this.connection.invoke("subscribe", topic);
-        this.receivedMsgHandlers[topic] = receivedMsgHandler;
+        this.topicHandlers[topic] = topicHandler;
     }
     async unSubscribe(topic) {
         await this.connection.invoke("un-subscribe", topic);

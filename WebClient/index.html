@@ -53,17 +53,26 @@
 </body>
 <script>
     var pubSubConnection = null;
-    const url = "http://localhost:5000";
+    const url = "http://localhost:81";
 
+    // Hàm nhận message từ topic
     receivedMessageHandler = (topic, message) => {
         $('#list-message').html($('#list-message').html() + topic + ':' + message + '\r\n');
     }
+
+    // Hàm nhận sự kiển hủy topic
+    abortTopicHandler = (topic) => {
+        alert(`topic ${topic.name} da bi huy`);
+    }
+
+    // Handler lắng nghe topic
+    var topicHandler = new TopicHandler(receivedMessageHandler,abortTopicHandler);
 
     newTopicHandler = (topic) => {
 
         var content = $('#list-topics').html();
         var content = content + "\r\n" + topic.name;
-        $('#list-message').html(content);
+        $('#list-topics').html(content);
     }
 
     disconnectedHandler = (err) => {
@@ -111,7 +120,7 @@
             var topic = $("#topic").val();
             
             // Lắng nghe topic.
-            var promise = pubSubConnection.subscribe(topic, receivedMessageHandler);
+            var promise = pubSubConnection.subscribe(topic,topicHandler);
             promise.then(() => {
                 alert("Lắng nghe topic thành công");
             });
