@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalR Client</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/3.1.7/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="/js/pub-sub-client.js"></script>
+
+</head>
+
+<body>
+    <section>
+        <div class="connect-div">
+            <label for="name">Tên:</label>
+            <input type="text" name="name" id="name">
+            <input type="button" id="connect-btn" value="Kết nối">
+        </div>
+        <div class="topic-div">
+            <input type="button" id="topic-load-btn" value="Cập nhật topic">
+            <input type="text" id="newTopicName">
+            <input type="button" id="newToicBtn" value="Thêm topic">
+            <div>
+                <textarea name="list-topics" id="list-topics" cols="33" rows="12"></textarea>
+            </div>
+        </div>
+        <div class="sub-div">
+            <label for="name">Lắng nghe topic:</label>
+            <input type="text" name="topic" id="topic">
+            <input type="button" id="sub-btn" value="Sub topic">
+        </div>
+        <div>
+            <textarea name="list-message" id="list-message" cols="33" rows="12"></textarea>
+        </div>
+        <div class="send-div">
+            <div class="to-div">
+                <div> <label>Topic nhận</label></div>
+                <input type="text" name="to" id="to">
+            </div>
+
+            <div class="message-div">
+                <div><label>Tin nhắn</label></div>
+                <input type="text" name="message" id="message">
+            </div>
+            <input type="button" id="send-btn" value="Gửi tin nhắn">
+        </div>
+    </section>
+</body>
+<script>
+    var pubSubConnection = null;
+    const url = "http://localhost:5000";
+
+    receivedMessageHandler = (topic, message) => {
+        $('#list-message').html($('#list-message').html() + topic + ':' + message + '\r\n');
+    }
+
+    newTopicHandler = (topic) => {
+
+        var content = $('#list-topics').html();
+        var content = content + "\r\n" + topic.name;
+        $('#list-message').html(content);
+    }
+
+    disconnectedHandler = (err) => {
+        alert(err);
+    };
+
+    $(document).ready(function () {
+        console.log("ready!");
+        $('#connect-btn').click(() => {
+            var username = $('#name').val();
+            username = username.trim();
+            if (username == '') {
+                alert("Tên người dùng không hợp lệ");
+                return;
+            }
+            // Tạo một connection.
+            pubSubConnection = new PubSubConnection(url, username);
+
+            // Tạo mới một topic.
+            pubSubConnection.setNewTopicHandler(newTopicHandler)
+
+            // Lắng nghe sự kiện mất kết nối
+            pubSubConnection.setDisconnectedHandler(disconnectedHandler)
+
+            //  Kết nối tới server
+            var promise = pubSubConnection.connect();
+            promise
+                .then(() => {
+                    alert("Kết nối thành công");
+                })
+                .catch((err) => {
+                    alert("Kết nối thất bại");
+                });
+        });
+
+
+        $('#sub-btn').click(() => {
+
+            // Kiểm tra kết nối
+            if (pubSubConnection == null) {
+                alert("Vui lòng kết nối trước");
+                return;
+            }
+
+            var topic = $("#topic").val();
+            
+            // Lắng nghe topic.
+            var promise = pubSubConnection.subscribe(topic, receivedMessageHandler);
+            promise.then(() => {
+                alert("Lắng nghe topic thành công");
+            });
+
+        });
+
+
+        $('#send-btn').click(() => {
+
+             // Kiểm tra kết nối.
+            if (pubSubConnection == null) {
+                alert("Vui lòng kết nối trước");
+                return;
+            }
+            var msg = $('#message').val();
+            
+            // topic nhận
+            var to = $('#to').val(); 
+            
+            // Gửi tin nhắn tới topic.
+            pubSubConnection.publish(to, msg).then(() => {
+                // Đã gửi tin nhắn thành công!
+            });
+        });
+
+        $('#topic-load-btn').click(() => {
+
+            if (pubSubConnection == null) {
+                alert("Vui lòng kết nối trước");
+                return;
+            }
+
+            // Tìm danh sách topic.
+            pubSubConnection.findTopics('')
+                .then(res => {
+                    if (res.status != 0)
+                        return;
+                    var data = res.data;
+                    var content = '';
+                    for (var i = 0; i < data.length; i++) {
+                        content += data[i].name + '\r\n';
+                    }
+                    $('#list-topics').html(content);
+                });
+        });
+
+        $('#newToicBtn').click(() => {
+
+            if (pubSubConnection == null) {
+                alert("Vui lòng kết nối trước");
+                return;
+            }
+
+            var name = $('#newTopicName').val();
+            // Tạo mới một topic
+            pubSubConnection.createTopic(name)
+                .then(() => {
+                    alert("Tạo topic thành công");
+                })
+                .catch((ex) => {
+                    alert("Tạo topic thất bại");
+                });
+        });
+    });
+</script>
+
+</html>

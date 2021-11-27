@@ -1,0 +1,57 @@
+:root {
+    --primary-color: rgb(172, 172, 255);
+}
+
+body {
+    margin: 2em;
+    background: #f2f2f2;
+    font-family: "consolas";
+}
+
+textarea {
+    margin-top: 1em;
+    margin-bottom: 1em;
+    width: 50%;
+}
+
+input[type="button"] {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    height: 1.5em;
+    border-radius: 1em;
+}
+
+section {
+    padding-top: 10%;
+    margin-left: 40%;
+}
+
+.send-div {
+    div {
+        margin-bottom: 1em;
+    }
+    label{
+        width: 10em;
+    }
+    .message-div{
+        display: flex;
+        div{
+            width: 7em;
+        }
+    }
+    .to-div{
+        display: flex;
+        div{
+            width: 7em;
+        }
+    }
+}
+
+.sub-div{
+    margin-top: 1em;
+}
+
+.topic-div{
+    margin-top: 1em;
+}
